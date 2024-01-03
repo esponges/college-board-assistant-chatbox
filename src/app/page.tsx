@@ -15,6 +15,7 @@ import { Container } from '@/app/components/organisms/container';
 
 import { apiChatResponseV2Body } from '@/app/types/zod';
 import type { ChatMessage } from '@/app/types';
+import { KaTeXComponent } from './components/atoms/katexDiv';
 
 export default function Home() {
   const [loading, setLoading] = useState<boolean>(false);
@@ -25,7 +26,8 @@ export default function Home() {
   }>({
     messages: [
       {
-        message: 'Hi, what would you like to learn about Fer?',
+        message:
+          'When \\(a \\ne 0\\), there are two solutions to \\(ax^2 + bx + c = 0\\) and they are \\[x = {-b \\pm \\sqrt{b^2-4ac} \\over 2a}.\\]',
         type: 'apiMessage',
       },
     ],
@@ -82,20 +84,16 @@ export default function Home() {
     textAreaRef.current && (textAreaRef.current.value = '');
 
     try {
-      const chatResponse = await safeFetch(
-        apiChatResponseV2Body,
-        '/api/chat',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            question,
-            threadId: messageState.threadId,
-          }),
-        }
-      );
+      const chatResponse = await safeFetch(apiChatResponseV2Body, '/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question,
+          threadId: messageState.threadId,
+        }),
+      });
       const { response, threadId } = chatResponse;
 
       setMessageState((state) => ({
@@ -157,6 +155,7 @@ export default function Home() {
           handleOptionClick={handleSetExampleQuestion}
         />
         <div className='align-center justify-center'>
+          <KaTeXComponent texExpression='c = \\pm\\sqrt{a^2 + b^2}' />
           <div
             ref={messageListRef}
             className={styles.messagelist}
