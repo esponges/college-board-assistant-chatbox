@@ -1,113 +1,292 @@
-import Image from 'next/image'
+'use client';
+
+import styles from '@/app/styles/home.module.css';
+
+import { useRef, useState, useEffect } from 'react';
+
+import Image from 'next/image';
+import ReactMarkdown from 'react-markdown';
+
+import { safeFetch } from '@/app/utils/fetch';
+import { getErrorMessage } from '@/app/utils';
+import { AboutModal } from '@/app/components/molecules/aboutModal';
+import { LoadingDots } from '@/app/components/atoms/loadingDots';
+
+import { apiChatResponseV2Body } from '@/app/types/zod';
+import type { ChatMessage } from '@/app/types';
 
 export default function Home() {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [messageState, setMessageState] = useState<{
+    messages: Pick<ChatMessage, 'message' | 'type'>[];
+    threadId?: string;
+  }>({
+    messages: [
+      {
+        message: 'Hi, what would you like to learn about Fer?',
+        type: 'apiMessage',
+      },
+    ],
+  });
+  const [examplesQuestionModalOpen, setExamplesQuestionModalOpen] =
+    useState<boolean>(false);
+
+  const messageListRef = useRef<HTMLDivElement>(null);
+  const textAreaRef = useRef<HTMLTextAreaElement>(null);
+
+  // todo: fix
+  useEffect(() => {
+    textAreaRef.current?.focus();
+  }, []);
+
+  // todo: accept modal option click event
+  const handleSubmit = async (
+    e?:
+      | React.KeyboardEvent<HTMLTextAreaElement>
+      | React.MouseEvent<HTMLButtonElement>
+  ) => {
+    setError(null);
+    if (!!e && 'key' in e && e.key === 'Enter') {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+      } else {
+        return;
+      }
+    }
+
+    const input = e?.currentTarget.value || textAreaRef.current?.value;
+
+    if (!input || typeof input !== 'string') {
+      setError('Please first enter a question.');
+
+      return;
+    }
+
+    const question = input.trim();
+
+    setMessageState((state) => ({
+      ...state,
+      messages: [
+        ...state.messages,
+        {
+          type: 'userMessage',
+          message: question,
+        },
+      ],
+    }));
+
+    setLoading(true);
+    // set text areaRef value to empty string
+    textAreaRef.current && (textAreaRef.current.value = '');
+
+    try {
+      const chatResponse = await safeFetch(
+        apiChatResponseV2Body,
+        '/api/chat-v2',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            question,
+            threadId: messageState.threadId,
+          }),
+        }
+      );
+      const { response, threadId } = chatResponse;
+
+      setMessageState((state) => ({
+        ...state,
+        messages: [
+          ...state.messages,
+          {
+            type: 'apiMessage',
+            message: response,
+          },
+        ],
+        threadId,
+      }));
+    } catch (err: unknown) {
+      const errMsg = getErrorMessage(err);
+
+      setError(
+        `An error occurred while fetching the data. Please try again. Error: ${errMsg}`
+      );
+      setLoading(false);
+
+      return;
+    }
+
+    setLoading(false);
+
+    //scroll to bottom - broken - fix later
+    messageListRef.current?.scrollTo(0, messageListRef.current.scrollHeight);
+  };
+
+  //prevent empty submissions
+  const handleEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
+    if (e.key === 'Enter' && textAreaRef.current?.value) {
+      handleSubmit(e);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+    }
+  };
+
+  const handleToggleExamplesQuestionModal = () => {
+    setExamplesQuestionModalOpen((prev) => !prev);
+  };
+
+  const handleSetExampleQuestion = (
+    e: React.MouseEvent<HTMLDivElement, MouseEvent>,
+    question: string
+  ) => {
+    textAreaRef.current && (textAreaRef.current.value = question);
+    handleToggleExamplesQuestionModal();
+    handleSubmit();
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <div className='mx-auto flex w-full flex-col gap-4'>
+      <AboutModal
+        isOpen={examplesQuestionModalOpen}
+        onClose={handleToggleExamplesQuestionModal}
+        handleOptionClick={handleSetExampleQuestion}
+      />
+      <div className='align-center justify-center'>
+        <div
+          ref={messageListRef}
+          className={styles.messagelist}
+          id='chat-messages-list'
+        >
+          {messageState.messages.map((el, index) => {
+            let icon;
+            let className;
+
+            if (el.type === 'apiMessage') {
+              icon = (
+                <Image
+                  key={index}
+                  src='/bot-image.png'
+                  alt='AI'
+                  width='40'
+                  height='40'
+                  className={styles.boticon}
+                  priority
+                />
+              );
+              className = styles.apimessage;
+            } else {
+              icon = (
+                <Image
+                  key={index}
+                  src='/usericon.png'
+                  alt='Me'
+                  width='30'
+                  height='30'
+                  className={styles.usericon}
+                  priority
+                />
+              );
+              // The latest message sent by the user will be animated while waiting for a response
+              className =
+                loading && index === messageState.messages.length - 1
+                  ? styles.usermessagewaiting
+                  : styles.usermessage;
+            }
+
+            return (
+              <div key={`chatMessage-${index}`}>
+                <div className={className}>
+                  {icon}
+                  <div className='flex flex-col'>
+                    <div
+                      className={styles.markdownanswer}
+                      id={`chat-message-${index}`}
+                    >
+                      <ReactMarkdown
+                        components={{
+                          a: ({ node, ...props }) => (
+                            <a
+                              {...props}
+                              target='_blank'
+                              rel='noopener noreferrer'
+                            />
+                          ),
+                        }}
+                      >
+                        {el.message}
+                      </ReactMarkdown>
+                    </div>
+                  </div>
+                  {!index ? (
+                    <div className='relative flex w-full flex-col items-center justify-center text-sm text-gray-500'>
+                      E.g: What&apos;s Fer&apos;s Tech Stack?
+                      {/* add toggler more options */}
+                      <button
+                        onClick={handleToggleExamplesQuestionModal}
+                        className='text-blue-500 hover:text-blue-700'
+                      >
+                        More Examples
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className='relative flex w-full flex-col items-center justify-center py-2'>
+          <div className='relative w-full'>
+            <form>
+              <textarea
+                disabled={loading}
+                onKeyDown={handleEnter}
+                ref={textAreaRef}
+                autoFocus={false}
+                rows={1}
+                maxLength={512}
+                id='chat-user-input'
+                name='chat-user-input'
+                placeholder={
+                  loading
+                    ? 'Waiting for response...'
+                    : 'Ask a question about Fer'
+                }
+                className={styles.textarea}
+              />
+              <button
+                onClick={handleSubmit}
+                disabled={loading}
+                className={styles.generatebutton}
+                id='chat-submit-button'
+              >
+                {loading ? (
+                  <div className={styles.loadingwheel}>
+                    <LoadingDots color='#000' />
+                  </div>
+                ) : (
+                  // Send icon SVG in input field
+                  <svg
+                    viewBox='0 0 20 20'
+                    className={styles.svgicon}
+                    xmlns='http://www.w3.org/2000/svg'
+                  >
+                    {/* eslint-disable-next-line max-len */}
+                    <path d='M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z'></path>
+                  </svg>
+                )}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+      {error ? (
+        <div className='rounded-md border border-red-400 p-4'>
+          <p className='text-red-500'>{error}</p>
+        </div>
+      ) : null}
+    </div>
+  );
 }
