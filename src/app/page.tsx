@@ -9,13 +9,18 @@ import ReactMarkdown from 'react-markdown';
 
 import { safeFetch } from '@/app/utils/fetch';
 import { getErrorMessage } from '@/app/utils';
-import { AboutModal } from '@/app/components/molecules/aboutModal';
+import { ChatModal } from '@/app/components/molecules/chatModal';
 import { LoadingDots } from '@/app/components/atoms/loadingDots';
 import { Container } from '@/app/components/organisms/container';
 
 import { apiChatResponseV2Body } from '@/app/types/zod';
 import type { ChatMessage } from '@/app/types';
 import { KaTeXComponent } from './components/atoms/katexDiv';
+import { useKatex } from '@/app/utils/hooks/useKatex';
+
+import 'katex/dist/katex.min.css';
+import { getRandomExample } from './utils/examples';
+import { QuizQuestion } from './components/atoms/quizQuestion';
 
 export default function Home() {
   const [loading, setLoading] = useState<boolean>(false);
@@ -27,7 +32,7 @@ export default function Home() {
     messages: [
       {
         message:
-          'When \\(a \\ne 0\\), there are two solutions to \\(ax^2 + bx + c = 0\\) and they are \\[x = {-b \\pm \\sqrt{b^2-4ac} \\over 2a}.\\]',
+          '!Hola! Soy tu tutor personal ¿En qué puedo ayudarte?',
         type: 'apiMessage',
       },
     ],
@@ -37,6 +42,7 @@ export default function Home() {
 
   const messageListRef = useRef<HTMLDivElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
+  const mathRef = useKatex();
 
   // todo: fix
   useEffect(() => {
@@ -146,16 +152,22 @@ export default function Home() {
     handleSubmit();
   };
 
+  const example = getRandomExample();
+
   return (
     <Container>
       <div className='mx-auto flex w-full flex-col gap-4'>
-        <AboutModal
+        <ChatModal
           isOpen={examplesQuestionModalOpen}
           onClose={handleToggleExamplesQuestionModal}
           handleOptionClick={handleSetExampleQuestion}
         />
         <div className='align-center justify-center'>
-          <KaTeXComponent texExpression='c = \\pm\\sqrt{a^2 + b^2}' />
+          {/* <div className={styles.messagelist} ref={mathRef}>
+            {messageState['messages'][0]['message']}
+          </div> */}
+          {/* <KaTeXComponent texExpression='c = \\pm\\sqrt{a^2 + b^2}' /> */}
+          <QuizQuestion context={example.context} questions={example.questions} />
           <div
             ref={messageListRef}
             className={styles.messagelist}
@@ -223,13 +235,13 @@ export default function Home() {
                     </div>
                     {!index ? (
                       <div className='relative flex w-full flex-col items-center justify-center text-sm text-gray-500'>
-                        E.g: What&apos;s Fer&apos;s Tech Stack?
+                        Ejemplo: Explícame cómo responder esta pregunta.
                         {/* add toggler more options */}
                         <button
                           onClick={handleToggleExamplesQuestionModal}
                           className='text-blue-500 hover:text-blue-700'
                         >
-                          More Examples
+                          Más ejemplos
                         </button>
                       </div>
                     ) : null}
