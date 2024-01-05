@@ -59,9 +59,25 @@ export async function POST(request: NextRequest) {
       actualRun.status === "in_progress" ||
       actualRun.status === "requires_action"
     ) {
-      // requires_action means that the assistant is waiting for the functions to be added
+      // uncomment when you have added the functions
       if (actualRun.status === "requires_action") {
-        throw new Error("required_action: Por favor intenta con otra pregunta");
+        // throw new Error("required_action: Por favor intenta con otra pregunta");
+        const toolCall =
+        actualRun.required_action?.submit_tool_outputs?.tool_calls[0];
+        
+        // here we should actually run the expected function
+        // for the moment just return a success response
+        const response = { success: true, error: null, result: null };
+
+        // we must submit the tool outputs to the run to continue
+        await openai.beta.threads.runs.submitToolOutputs(thread.id, run.id, {
+          tool_outputs: [
+            {
+              tool_call_id: toolCall?.id,
+              output: JSON.stringify(response),
+            },
+          ],
+        });
       }
       // keep polling until the run is completed
       await new Promise((resolve) => setTimeout(resolve, 1000));

@@ -18,13 +18,14 @@ import type { ChatMessage } from '@/app/types';
 import { KaTeXComponent } from './components/atoms/katexDiv';
 import { useKatex } from '@/app/utils/hooks/useKatex';
 
-import 'katex/dist/katex.min.css';
 import { getRandomExample } from './utils/examples';
 import { QuizQuestion } from './components/atoms/quizQuestion';
 
+// import 'katex/dist/katex.min.css';
 export default function Home() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [exampleQuestion, _setExampleQuestion] = useState(getRandomExample());
   const [messageState, setMessageState] = useState<{
     messages: Pick<ChatMessage, 'message' | 'type'>[];
     threadId?: string;
@@ -73,6 +74,7 @@ export default function Home() {
     }
 
     const question = input.trim();
+    const fullContext = `Ejemplo: ${JSON.stringify(exampleQuestion)}\n\n Pregunta del usuario: ${question}`;
 
     setMessageState((state) => ({
       ...state,
@@ -96,7 +98,7 @@ export default function Home() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          question,
+          question: fullContext,
           threadId: messageState.threadId,
         }),
       });
@@ -152,8 +154,6 @@ export default function Home() {
     handleSubmit();
   };
 
-  const example = getRandomExample();
-
   return (
     <Container>
       <div className='mx-auto flex w-full flex-col gap-4'>
@@ -167,7 +167,7 @@ export default function Home() {
             {messageState['messages'][0]['message']}
           </div> */}
           {/* <KaTeXComponent texExpression='c = \\pm\\sqrt{a^2 + b^2}' /> */}
-          <QuizQuestion context={example.context} questions={example.questions} />
+          <QuizQuestion context={exampleQuestion.context} questions={exampleQuestion.questions} />
           <div
             ref={messageListRef}
             className={styles.messagelist}
@@ -264,8 +264,8 @@ export default function Home() {
                   name='chat-user-input'
                   placeholder={
                     loading
-                      ? 'Waiting for response...'
-                      : 'Ask a question about Fer'
+                      ? 'Espernado respuesta...'
+                      : 'Escribe tu pregunta o elige una de los ejemplos'
                   }
                   className={styles.textarea}
                 />
