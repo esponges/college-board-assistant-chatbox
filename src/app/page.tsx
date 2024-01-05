@@ -90,6 +90,7 @@ export default function Home() {
     setLoading(true);
     // set text areaRef value to empty string
     textAreaRef.current && (textAreaRef.current.value = '');
+    const isFirstMessage = messageState.messages.length === 2;
 
     try {
       const chatResponse = await safeFetch(apiChatResponseV2Body, '/api/chat', {
@@ -98,7 +99,7 @@ export default function Home() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          question: fullContext,
+          question: isFirstMessage ? fullContext : question,
           threadId: messageState.threadId,
         }),
       });
