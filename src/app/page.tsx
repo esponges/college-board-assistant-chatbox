@@ -241,6 +241,14 @@ export default function Home() {
                                 rel='noopener noreferrer'
                               />
                             ),
+                            // give some margin top to code blocks
+                            pre: ({ node, ...props }) => (
+                              <pre {...props} className='my-2 bg-black rounded-md px-2' />
+                            ),
+                            // give some margin top to code blocks
+                            code: ({ node, ...props }) => (
+                              <code {...props} className='bg-black rounded-md px-2' />
+                            ),
                           }}
                         >
                           {el.message}
@@ -252,7 +260,7 @@ export default function Home() {
                         Ejemplo: Explícame cómo responder esta pregunta.
                         {/* add toggler more options */}
                         <button
-                          onClick={e => setExamplesQuestionModalOpen(true)}
+                          onClick={(_e) => setExamplesQuestionModalOpen(true)}
                           className='text-blue-500 hover:text-blue-700'
                         >
                           Más ejemplos
