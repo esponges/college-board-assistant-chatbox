@@ -15,11 +15,12 @@ import { Container } from '@/app/components/organisms/container';
 
 import { apiChatResponseV2Body } from '@/app/types/zod';
 import type { ChatMessage } from '@/app/types';
-import { KaTeXComponent } from './components/atoms/katexDiv';
-import { useKatex } from '@/app/utils/hooks/useKatex';
+// import { KaTeXComponent } from './components/atoms/katexDiv';
+// import { useKatex } from '@/app/utils/hooks/useKatex';
 
 import { getRandomExample } from './utils/examples';
-import { QuizQuestion } from './components/atoms/quizQuestion';
+// import { QuizQuestion } from './components/atoms/quizQuestion';
+import { twMerge } from 'tailwind-merge';
 
 // import 'katex/dist/katex.min.css';
 export default function Home() {
@@ -32,8 +33,7 @@ export default function Home() {
   }>({
     messages: [
       {
-        message:
-          '!Hola! Soy tu tutor personal ¿En qué puedo ayudarte?',
+        message: '!Hola! Soy tu tutor personal ¿En qué puedo ayudarte?',
         type: 'apiMessage',
       },
     ],
@@ -43,7 +43,7 @@ export default function Home() {
 
   const messageListRef = useRef<HTMLDivElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
-  const mathRef = useKatex();
+  // const mathRef = useKatex();
 
   // todo: fix
   useEffect(() => {
@@ -74,7 +74,9 @@ export default function Home() {
     }
 
     const question = input.trim();
-    const fullContext = `Ejemplo: ${JSON.stringify(exampleQuestion)}\n\n Pregunta del usuario: ${question}`;
+    const fullContext = `Ejemplo: ${JSON.stringify(
+      exampleQuestion
+    )}\n\n Pregunta del usuario: ${question}`;
 
     setMessageState((state) => ({
       ...state,
@@ -90,7 +92,8 @@ export default function Home() {
     setLoading(true);
     // set text areaRef value to empty string
     textAreaRef.current && (textAreaRef.current.value = '');
-    const isFirstMessage = messageState.messages.length === 2;
+    // we want to send the full context on the first message
+    const isFirstMessage = messageState.messages.length === 1;
 
     try {
       const chatResponse = await safeFetch(apiChatResponseV2Body, '/api/chat', {
@@ -151,7 +154,7 @@ export default function Home() {
     question: string
   ) => {
     textAreaRef.current && (textAreaRef.current.value = question);
-    handleToggleExamplesQuestionModal();
+    setExamplesQuestionModalOpen(false);
     handleSubmit();
   };
 
@@ -160,7 +163,7 @@ export default function Home() {
       <div className='mx-auto flex w-full flex-col gap-4'>
         <ChatModal
           isOpen={examplesQuestionModalOpen}
-          onClose={handleToggleExamplesQuestionModal}
+          onClose={() => setExamplesQuestionModalOpen(false)}
           handleOptionClick={handleSetExampleQuestion}
         />
         <div className='align-center justify-center'>
@@ -168,7 +171,10 @@ export default function Home() {
             {messageState['messages'][0]['message']}
           </div> */}
           {/* <KaTeXComponent texExpression='c = \\pm\\sqrt{a^2 + b^2}' /> */}
-          <QuizQuestion context={exampleQuestion.context} questions={exampleQuestion.questions} />
+          {/* <QuizQuestion
+            context={exampleQuestion.context}
+            questions={exampleQuestion.questions}
+          /> */}
           <div
             ref={messageListRef}
             className={styles.messagelist}
@@ -211,7 +217,14 @@ export default function Home() {
               }
 
               return (
-                <div key={`chatMessage-${index}`}>
+                <div
+                  key={`chatMessage-${index}`}
+                  // todo: won't work
+                  className={twMerge(
+                    `chatMessage-${index} block`,
+                    el.type === 'apiMessage' ? 'text-left' : 'text-right'
+                  )}
+                >
                   <div className={className}>
                     {icon}
                     <div className='flex flex-col'>
@@ -239,7 +252,7 @@ export default function Home() {
                         Ejemplo: Explícame cómo responder esta pregunta.
                         {/* add toggler more options */}
                         <button
-                          onClick={handleToggleExamplesQuestionModal}
+                          onClick={e => setExamplesQuestionModalOpen(true)}
                           className='text-blue-500 hover:text-blue-700'
                         >
                           Más ejemplos
