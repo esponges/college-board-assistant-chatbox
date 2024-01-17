@@ -138,9 +138,14 @@ export default function Home() {
 
   //prevent empty submissions
   const handleEnter = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
-    if (e.key === 'Enter' && textAreaRef.current?.value) {
-      handleSubmit(e);
-    } else if (e.key === 'Enter') {
+    if (textAreaRef.current?.value) {
+      if (e.key === 'Enter' && textAreaRef.current?.value && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+        handleSubmit(e);
+      } else if (e.key === 'Enter' && e.shiftKey && textAreaRef.current?.value) {
+        textAreaRef.current.value += '\n'
+      } 
+    }
+    if (e.key === 'Enter') {
       e.preventDefault();
     }
   };
@@ -281,7 +286,7 @@ export default function Home() {
                   ref={textAreaRef}
                   autoFocus={false}
                   rows={1}
-                  maxLength={512}
+                  maxLength={10000}
                   id='chat-user-input'
                   name='chat-user-input'
                   placeholder={
