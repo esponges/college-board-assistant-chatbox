@@ -15,14 +15,10 @@ import { Container } from '@/app/components/organisms/container';
 
 import { apiChatResponseV2Body } from '@/app/types/zod';
 import type { ChatMessage } from '@/app/types';
-// import { KaTeXComponent } from './components/atoms/katexDiv';
-// import { useKatex } from '@/app/utils/hooks/useKatex';
 
 import { getRandomExample } from './utils/examples';
-// import { QuizQuestion } from './components/atoms/quizQuestion';
 import { twMerge } from 'tailwind-merge';
 
-// import 'katex/dist/katex.min.css';
 export default function Home() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +39,6 @@ export default function Home() {
 
   const messageListRef = useRef<HTMLDivElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
-  // const mathRef = useKatex();
 
   // todo: fix
   useEffect(() => {
@@ -172,14 +167,6 @@ export default function Home() {
           handleOptionClick={handleSetExampleQuestion}
         />
         <div className='align-center justify-center'>
-          {/* <div className={styles.messagelist} ref={mathRef}>
-            {messageState['messages'][0]['message']}
-          </div> */}
-          {/* <KaTeXComponent texExpression='c = \\pm\\sqrt{a^2 + b^2}' /> */}
-          {/* <QuizQuestion
-            context={exampleQuestion.context}
-            questions={exampleQuestion.questions}
-          /> */}
           <div
             ref={messageListRef}
             className={styles.messagelist}
